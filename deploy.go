@@ -50,8 +50,8 @@ func getHomeDir() (string, error) {
 }
 
 func logTargetStatus(id int, target *targetConfig, status string) {
-	log.Printf("[%d] %s %s@%s (%s)\n",
-		id, status, target.User, target.Host, target.Auth.Method)
+	log.Printf("%s task #%d (%s@%s)\n",
+		status, id, target.User, target.Host)
 }
 
 /*	{
@@ -174,8 +174,8 @@ func main() {
 		var connfig targetConfig
 		err := authDec.Decode(&connfig)
 		if err != nil && err != io.EOF {
-			log.Println(err)
-			continue
+			log.Fatalln("Couldn't parse targets file:", err)
+			os.Exit(1)
 		}
 
 		wg.Add(1)
