@@ -18,7 +18,7 @@ import (
 var (
 	target = flag.String("target", "target.json", "json `file` with deployment targets")
 	script = flag.String("script", "script.sh", "shell script `file` with deployment procedure")
-	stdout = flag.Bool("stdout", true, "should ssh session stdout be piped?")
+	stdout = flag.Bool("stdout", false, "pipe remote shell stdout to current shell stdout")
 )
 
 func fatalError(msg string, err error) {
