@@ -22,16 +22,18 @@ The tool connects to each target and executes the script, concurrently.
 
 **What is a target?**
 A target is any (SSH-able) machine you want to access: fridge, rpi, school computer, website server, etc.
-Each target can be described by a JSON structure, specifying the username, address:port and authentication method:
+Each targets file can be described as a JSON array with target objects, specifying the username, address:port and authentication method:
 ```JSON
-{
-	"username": "bob",
-	"host": "myserver:22",
-	"auth": {
-		"method": "password" or "pki",
-		"artifact": "<secret>" or "/path/to/private_key.pem"
- 	}
- }
+[
+	{
+		"username": "bob",
+		"host": "myserver:22",
+		"auth": {
+			"method": "password" or "pki",
+			"artifact": "<secret>" or "/path/to/private_key.pem"
+	 	}
+	}
+]
 ```
 
 **What is a script?**
