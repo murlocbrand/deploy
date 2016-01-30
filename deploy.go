@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	target = flag.String("target", "target.json", "json `file` with deployment targets")
-	script = flag.String("script", "script.sh", "shell script `file` with deployment procedure")
+	target = flag.String("target", "target.json", " path to the `file` with JSON-formatted targets")
+	script = flag.String("script", "script.sh", "path to the shell script `file`")
 	stdout = flag.Bool("stdout", false, "pipe remote shell stdout to current shell stdout")
 )
 
