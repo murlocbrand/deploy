@@ -15,6 +15,9 @@ deploy - a shitty (but strangely useful) deployment tool written in go
 `deploy` reads a JSON-formatted targets file and starts a remote SSH shell session for each valid target entry.
 A specified shell script is then piped to the remote shell and executed.
 
+## Install
+`go install github.com/murlocbrand/deploy` or [prebuilt](https://gobuilder.me/github.com/murlocbrand/deploy).
+
 ## Concept
 Deploy tries to help with installing/updating/../ your programs by introducing `targets` and `scripts`, which have a simple relation: a `script` is run on a `target`.
 When running the tool you specify a targets file and a script file (or use default file names).
