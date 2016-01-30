@@ -1,3 +1,4 @@
+// Copyright (c) 2016 Axel Smeets
 package main
 
 import (
