@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -127,11 +126,12 @@ func parseClientConfig(target *targetConfig) (*ssh.ClientConfig, error) {
 	return conf, nil
 }
 
-func deploy(host string, conf *ssh.ClientConfig, script *os.File) error {
+func execRemoteShell(host string, conf *ssh.ClientConfig, script *[]byte) error {
 	client, err := ssh.Dial("tcp", host, conf)
 	if err != nil {
 		return fmt.Errorf("Failed to dial target: %s", err.Error())
 	}
+	defer client.Close()
 
 	session, err := client.NewSession()
 	if err != nil {
@@ -141,7 +141,6 @@ func deploy(host string, conf *ssh.ClientConfig, script *os.File) error {
 
 	if *stdout {
 		session.Stdout = os.Stdout
-		session.Stderr = os.Stderr
 	}
 
 	stdin, err := session.StdinPipe()
@@ -149,62 +148,70 @@ func deploy(host string, conf *ssh.ClientConfig, script *os.File) error {
 		return fmt.Errorf("Failed setting up stdin: %s\n", err.Error())
 	}
 
-	session.Shell()
-	io.Copy(stdin, script)
-	stdin.Close()
-	session.Wait()
+	if err := session.Shell(); err != nil {
+		return fmt.Errorf("Error starting remote shell: %s\n", err.Error())
+	}
+
+	if _, err := stdin.Write(*script); err != nil {
+		return fmt.Errorf("Error writing script: %s\n", err.Error())
+	}
+
+	if err := stdin.Close(); err != nil {
+		return fmt.Errorf("Error closing session stdin: %s\n", err.Error())
+	}
+
+	if err := session.Wait(); err != nil {
+		return fmt.Errorf("Error during shell session: %s\n", err.Error())
+	}
 
 	return nil
+}
+
+func deploy(taskId int, target targetConfig, script *[]byte, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	if err := preprocessTarget(&target); err != nil {
+		logTargetStatus(taskId, &target, "Aborted: "+err.Error())
+		return
+	}
+
+	conf, err := parseClientConfig(&target)
+	if err != nil {
+		logTargetStatus(taskId, &target, "Aborted: "+err.Error())
+		return
+	}
+
+	logTargetStatus(taskId, &target, "Starting")
+
+	if err := execRemoteShell(target.Host, conf, script); err != nil {
+		logTargetStatus(taskId, &target, "Errored: "+err.Error())
+	} else {
+		logTargetStatus(taskId, &target, "Completed")
+	}
 }
 
 func main() {
 	flag.Parse()
 
 	authReader, err := os.Open(*target)
+	defer authReader.Close()
 	fatalError("Failed to read target config", err)
 
-	cmdReader, err := os.Open(*script)
-	fatalError("Failed to read deployment script", err)
+	cmd, err := ioutil.ReadFile(*script)
+	if err != nil {
+		log.Fatalln("Couldn't read script file:", err)
+	}
 
 	authDec := json.NewDecoder(authReader)
+	var targets []targetConfig
+	if err := authDec.Decode(&targets); err != nil {
+		log.Fatalln("Couldn't parse targets file:", err)
+	}
+
 	var wg sync.WaitGroup
-
-	for i := 0; authDec.More(); i++ {
-
-		var connfig targetConfig
-		err := authDec.Decode(&connfig)
-		if err != nil && err != io.EOF {
-			log.Fatalln("Couldn't parse targets file:", err)
-			os.Exit(1)
-		}
-
-		wg.Add(1)
-		go func(id int, target *targetConfig) {
-			defer wg.Done()
-
-			err := preprocessTarget(target)
-			if err != nil {
-				log.Printf("[%d] %s\n", id, err.Error())
-				return
-			}
-
-			conf, err := parseClientConfig(target)
-			if err != nil {
-				log.Printf("[%d] %s\n", id, err.Error())
-				return
-			}
-
-			logTargetStatus(id, target, "Starting")
-
-			err = deploy(connfig.Host, conf, cmdReader)
-
-			if err != nil {
-				log.Printf("[%d] %s\n", id, err.Error())
-				return
-			}
-
-			logTargetStatus(id, target, "Completed")
-		}(i, &connfig)
+	wg.Add(len(targets))
+	for i, conf := range targets {
+		go deploy(i, conf, &cmd, &wg)
 	}
 
 	wg.Wait()
