@@ -1,4 +1,4 @@
-deploy - a shitty (but strangely useful) deployment tool written in go
+deploy - a strangely useful deployment tool written in go
 
 ## Synopsis
 `deploy [--stdout] [--target <file>] [--script <file>]`
