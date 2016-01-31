@@ -14,6 +14,7 @@ deploy - a shitty (but strangely useful) deployment tool written in go
 ## Description
 `deploy` reads a JSON-formatted targets file and starts a remote SSH shell session for each valid target entry.
 A specified shell script is then piped to the remote shell and executed.
+**Shell script is interpreted on the receiving end => it should have LF line endings.**
 
 ## Install
 `go install github.com/murlocbrand/deploy` or [prebuilt](https://gobuilder.me/github.com/murlocbrand/deploy).
