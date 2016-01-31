@@ -49,7 +49,7 @@ func getHomeDir() (string, error) {
 	return current.HomeDir, nil
 }
 
-func logTargetStatus(id int, target *targetConfig, status string) {
+func logTaskStatus(id int, target *targetConfig, status string) {
 	log.Printf("%s task #%d (%s@%s)\n",
 		status, id, target.User, target.Host)
 }
@@ -172,22 +172,22 @@ func deploy(taskId int, target targetConfig, script *[]byte, wg *sync.WaitGroup)
 	defer wg.Done()
 
 	if err := preprocessTarget(&target); err != nil {
-		logTargetStatus(taskId, &target, "Aborted: "+err.Error())
+		logTaskStatus(taskId, &target, "Aborted: "+err.Error())
 		return
 	}
 
 	conf, err := parseClientConfig(&target)
 	if err != nil {
-		logTargetStatus(taskId, &target, "Aborted: "+err.Error())
+		logTaskStatus(taskId, &target, "Aborted: "+err.Error())
 		return
 	}
 
-	logTargetStatus(taskId, &target, "Starting")
+	logTaskStatus(taskId, &target, "Starting")
 
 	if err := execRemoteShell(target.Host, conf, script); err != nil {
-		logTargetStatus(taskId, &target, "Errored: "+err.Error())
+		logTaskStatus(taskId, &target, "Errored: "+err.Error())
 	} else {
-		logTargetStatus(taskId, &target, "Completed")
+		logTaskStatus(taskId, &target, "Completed")
 	}
 }
 
