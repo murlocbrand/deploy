@@ -199,15 +199,13 @@ func main() {
 	defer authReader.Close()
 
 	cmd, err := ioutil.ReadFile(*script)
-	if err != nil {
-		log.Fatalln("Couldn't read script file:", err)
-	}
+	fatalError("Couldn't read script file", err)
+
+	var targets []targetConfig
 
 	authDec := json.NewDecoder(authReader)
-	var targets []targetConfig
-	if err := authDec.Decode(&targets); err != nil {
-		log.Fatalln("Couldn't parse targets file:", err)
-	}
+	err = authDec.Decode(&targets)
+	fatalError("Couldn't parse targets file", err)
 
 	var wg sync.WaitGroup
 	wg.Add(len(targets))
