@@ -195,8 +195,8 @@ func main() {
 	flag.Parse()
 
 	authReader, err := os.Open(*target)
-	defer authReader.Close()
 	fatalError("Failed to read target config", err)
+	defer authReader.Close()
 
 	cmd, err := ioutil.ReadFile(*script)
 	if err != nil {
