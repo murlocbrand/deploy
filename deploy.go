@@ -76,6 +76,7 @@ type targetConfig struct {
 // 	- if no username, set to current user's name
 // 	- if ~ found in pki artifact, expand it to home directory
 func preprocessTarget(target *targetConfig) error {
+	// No user? Try to use current user's username.
 	if len(target.User) == 0 {
 		username, err := getUsername()
 		if err != nil {
@@ -84,6 +85,7 @@ func preprocessTarget(target *targetConfig) error {
 		target.User = username
 	}
 
+	// A ~ in the private key path? Try to expand it!
 	if target.Auth.Method == "pki" &&
 		strings.Contains(target.Auth.Artifact, "~") {
 		home, err := getHomeDir()
@@ -101,6 +103,7 @@ func parseClientConfig(target *targetConfig) (*ssh.ClientConfig, error) {
 		User: target.User,
 	}
 
+	// Only supports password and pki methods. Soon interactive as well?
 	switch target.Auth.Method {
 	case "password":
 		conf.Auth = []ssh.AuthMethod{
@@ -194,13 +197,18 @@ func deploy(taskId int, target targetConfig, script *[]byte, wg *sync.WaitGroup)
 func main() {
 	flag.Parse()
 
+	// Easier on memory usage to use a json Decoder on the file (a reader),
+	// than reading file into memory and calling Unmarshal.
 	authReader, err := os.Open(*target)
 	fatalError("Failed to read target config", err)
 	defer authReader.Close()
 
+	// Easier on disk to read file once, instead of once/target. (Readers are
+	// consumed and must be instantiated per target)
 	cmd, err := ioutil.ReadFile(*script)
 	fatalError("Couldn't read script file", err)
 
+	// Use array (as opposed to floating entries) so json is valid
 	var targets []targetConfig
 
 	authDec := json.NewDecoder(authReader)
