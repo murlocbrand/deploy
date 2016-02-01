@@ -75,7 +75,7 @@ type targetConfig struct {
 // Fix the configuration before handing it to parseClientConfig:
 // 	- if no username, set to current user's name
 // 	- if ~ found in pki artifact, expand it to home directory
-func preprocessTarget(target *targetConfig) error {
+func (target *targetConfig) preprocess() error {
 	// No user? Try to use current user's username.
 	if len(target.User) == 0 {
 		username, err := getUsername()
@@ -98,7 +98,7 @@ func preprocessTarget(target *targetConfig) error {
 	return nil
 }
 
-func parseClientConfig(target *targetConfig) (*ssh.ClientConfig, error) {
+func (target *targetConfig) clientConfig() (*ssh.ClientConfig, error) {
 	conf := &ssh.ClientConfig{
 		User: target.User,
 	}
@@ -174,12 +174,12 @@ func execRemoteShell(host string, conf *ssh.ClientConfig, script *[]byte) error 
 func deploy(taskId int, target targetConfig, script *[]byte, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	if err := preprocessTarget(&target); err != nil {
+	if err := target.preprocess(); err != nil {
 		logTaskStatus(taskId, &target, "Aborted: "+err.Error())
 		return
 	}
 
-	conf, err := parseClientConfig(&target)
+	conf, err := target.clientConfig()
 	if err != nil {
 		logTaskStatus(taskId, &target, "Aborted: "+err.Error())
 		return
