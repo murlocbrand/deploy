@@ -6,7 +6,7 @@ deploy - a strangely useful deployment tool written in go
 	--stdout
 		pipe remote shell stdout to current shell stdout
 	--target <file>
-		ppath to the file with JSON-formatted targets (default "target.json")
+		path to the file with JSON-formatted targets (default "target.json")
 	--script <file>
 		path to the shell script file (default "script.sh")
 ```
