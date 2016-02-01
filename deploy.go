@@ -8,8 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/user"
-	"strings"
 	"sync"
 
 	"golang.org/x/crypto/ssh"
@@ -27,107 +25,9 @@ func fatalError(msg string, err error) {
 	}
 }
 
-func getUsername() (string, error) {
-	current, err := user.Current()
-	if err != nil {
-		return "", fmt.Errorf("failed getting active user: %s", err.Error())
-	}
-
-	username := current.Username
-	if strings.Contains(username, "\\") {
-		// probably on a windows machine: DOMAIN\USER
-		username = strings.Split(username, "\\")[1]
-	}
-	return username, nil
-}
-
-func getHomeDir() (string, error) {
-	current, err := user.Current()
-	if err != nil {
-		return "", fmt.Errorf("failed getting active user: %s", err.Error())
-	}
-	return current.HomeDir, nil
-}
-
 func logTaskStatus(id int, target *targetConfig, status string) {
 	log.Printf("%s task #%d (%s@%s)\n",
 		status, id, target.User, target.Host)
-}
-
-/*	{
- *		"username": "bob",
- *		"host": "myserver:22",
- *		"auth": {
- *			"method": "password" or "pki",
- *			"artifact": "<secret>" or "/path/to/private_key.pem"
- * 		}
- * 	}
- */
-type targetConfig struct {
-	User string `json:"username"`
-	Host string `json:"host"`
-	Auth struct {
-		Method   string `json:"method"`
-		Artifact string `json:"artifact"`
-	} `json:"auth"`
-}
-
-// Fix the configuration before handing it to parseClientConfig:
-// 	- if no username, set to current user's name
-// 	- if ~ found in pki artifact, expand it to home directory
-func (target *targetConfig) preprocess() error {
-	// No user? Try to use current user's username.
-	if len(target.User) == 0 {
-		username, err := getUsername()
-		if err != nil {
-			return fmt.Errorf("failed resolving username: %s", err.Error())
-		}
-		target.User = username
-	}
-
-	// A ~ in the private key path? Try to expand it!
-	if target.Auth.Method == "pki" &&
-		strings.Contains(target.Auth.Artifact, "~") {
-		home, err := getHomeDir()
-		if err != nil {
-			return fmt.Errorf("failed expanding ~ to home dir: %s", err.Error())
-		}
-		target.Auth.Artifact = strings.Replace(target.Auth.Artifact, "~", home, 1)
-	}
-
-	return nil
-}
-
-func (target *targetConfig) clientConfig() (*ssh.ClientConfig, error) {
-	conf := &ssh.ClientConfig{
-		User: target.User,
-	}
-
-	// Only supports password and pki methods. Soon interactive as well?
-	switch target.Auth.Method {
-	case "password":
-		conf.Auth = []ssh.AuthMethod{
-			ssh.Password(target.Auth.Artifact),
-		}
-	case "pki":
-		pem, err := ioutil.ReadFile(target.Auth.Artifact)
-		if err != nil {
-			return nil, fmt.Errorf("failed reading key: %s", err.Error())
-		}
-
-		signer, err := ssh.ParsePrivateKey(pem)
-		if err != nil {
-			return nil, fmt.Errorf("failed parsing key: %s", err.Error())
-		}
-
-		conf.Auth = []ssh.AuthMethod{ssh.PublicKeys(signer)}
-	default:
-		err := fmt.Errorf("unknown authentication method %s", target.Auth.Method)
-		return nil, err
-
-	}
-
-	return conf, nil
 }
 
 func execRemoteShell(host string, conf *ssh.ClientConfig, script *[]byte) error {
@@ -174,12 +74,12 @@ func execRemoteShell(host string, conf *ssh.ClientConfig, script *[]byte) error 
 func deploy(taskId int, target targetConfig, script *[]byte, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	if err := target.preprocess(); err != nil {
+	if err := target.Preprocess(); err != nil {
 		logTaskStatus(taskId, &target, "Aborted: "+err.Error())
 		return
 	}
 
-	conf, err := target.clientConfig()
+	conf, err := target.ClientConfig()
 	if err != nil {
 		logTaskStatus(taskId, &target, "Aborted: "+err.Error())
 		return
