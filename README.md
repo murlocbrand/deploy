@@ -54,23 +54,21 @@ one program, many servers
 
 				 [server 1]		specify one target (with all targets) and script file.
 [program]  --->  [server 2]
-				 [server N]		ex: deploy -target frontend -script website
-								ex: deploy -target pi_cluster -script compute_pi
+				 [server N]		ex: deploy -target pi_cluster -script compute_pi
 many programs, many servers
 ---------------------------
 
 [program 1]  --->  [server 1]	specify one target file per server, and one script file per program.
 [program 2]  --->  [server 2]
 [program N]	 --->  [server N]	ex: deploy -target school -script compile_labs
-								ex: deploy -target fridge -script got_ice
+								ex: deploy -target fridge -script got_ice?
 
 many programs, one server
 -------------------------
 
 [program 1]  --->  [server 1]	specify one target file, and one script file per program.
 [program 2]  --->  [server 1]
-[program N]	 --->  [server 1]	ex: deploy -target database -script backup_database
-								ex: deploy -target rpi -script coffee_watch
+[program N]	 --->  [server 1]	ex: deploy -target rpi -script backup_database
 
 one program, one server
 -----------------------
