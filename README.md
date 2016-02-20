@@ -55,6 +55,7 @@ one program, many servers
 				 [server 1]		specify one target (with all targets) and script file.
 [program]  --->  [server 2]
 				 [server N]		ex: deploy -target pi_cluster -script compute_pi
+
 many programs, many servers
 ---------------------------
 
