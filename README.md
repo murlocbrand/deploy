@@ -11,6 +11,9 @@ deploy - a strangely useful deployment tool written in go
 		path to the shell script file (default "script.sh")
 ```
 
+## Rationale
+I had problems with deploying many projects to different machines. So I wrote this tool to help me automate the install & deployment process.
+
 ## Description
 `deploy` reads a JSON-formatted targets file and starts a remote SSH shell session for each valid target entry.
 A specified shell script is then piped to the remote shell and executed.
