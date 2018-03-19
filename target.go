@@ -51,6 +51,7 @@ func (target *targetConfig) password() (*ssh.ClientConfig, error) {
 		Auth: []ssh.AuthMethod{
 			ssh.Password(target.Auth.Artifact),
 		},
+                HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}, nil
 }
 
@@ -71,6 +72,7 @@ func (target *targetConfig) pki() (*ssh.ClientConfig, error) {
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
+                HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}, nil
 }
 

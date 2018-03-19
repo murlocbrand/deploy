@@ -1,87 +1,44 @@
-deploy - a strangely useful deployment tool written in go
+deploy - insecure parallel ssh script execution
 
 ## Synopsis
-`deploy [--stdout] [--target <file>] [--script <file>]`
+```bash
+deploy [--stdout] [--target file] [--script file]
+
+Usage of deploy.exe:
+  -script file
+        path to the shell script file (default "script.sh")
+  -stdout
+        pipe remote shell stdout to current shell stdout
+  -target file
+        path to the file with JSON-formatted targets (default "target.json")
 ```
-	--stdout
-		pipe remote shell stdout to current shell stdout
-	--target <file>
-		path to the file with JSON-formatted targets (default "target.json")
-	--script <file>
-		path to the shell script file (default "script.sh")
-```
 
-## Rationale
-I had problems with deploying many projects to different machines. So I wrote this tool to help me automate the install & deployment process.
+## How it works
+ 1 - SSH into [#target]($TARGET)
+ 2 - Execute [#script]($SCRIPT)
+ 3 - Done!
 
-## Description
-`deploy` reads a JSON-formatted targets file and starts a remote SSH shell session for each valid target entry.
-A specified shell script is then piped to the remote shell and executed.
-**Shell script is interpreted on the receiving end => it should have LF line endings.**
-
-## Install
-`go install github.com/murlocbrand/deploy` or [prebuilt](https://gobuilder.me/github.com/murlocbrand/deploy).
-
-## Concept
-Deploy tries to help with installing/updating/../ your programs by introducing `targets` and `scripts`, which have a simple relation: a `script` is run on a `target`.
-When running the tool you specify a targets file and a script file (or use default file names).
-The tool connects to each target and executes the script, concurrently.
-
-**What is a target?**
-A target is any (SSH-able) machine you want to access: fridge, rpi, school computer, website server, etc.
-Each targets file can be described as a JSON array with target objects, specifying the username, address:port and authentication method:
-```JSON
+## target
+```json
 [
-	{
-		"username": "bob",
-		"host": "myserver:22",
-		"auth": {
-			"method": "password" or "pki",
-			"artifact": "<secret>" or "/path/to/private_key.pem"
-	 	}
-	}
+    {
+        "username": "not-root",
+        "host": "fridge.local:22",
+        "auth": {
+            "method": "pki",
+            "artifact": "~/.ssh/id_rsa"
+        }
+    }
 ]
 ```
+ - `username`: login user (w/interactive shell)
+ - `host`: `(hostname|ip-addres):port`
+ - `auth`: authentication scheme
+ -  - `method`: `pki` or `password`
+ -  - `artifact`: `path/to/id_rsa` or `user password`
 
-**What is a script?**
-A script is basically a shell script file that is run on a target:
-```shell
-echo 'hello from the other side'
-```
+note: it is not possible to verify the host key at the moment
 
-## Scenarios
-Here are some scenarios and ideas for target and script files:
-```
-one program, many servers
--------------------------
+## script
+The script file contains the shell commands you want to invoke on each target.
 
-				 [server 1]		specify one target (with all targets) and script file.
-[program]  --->  [server 2]
-				 [server N]		ex: deploy -target pi_cluster -script compute_pi
-
-many programs, many servers
----------------------------
-
-[program 1]  --->  [server 1]	specify one target file per server, and one script file per program.
-[program 2]  --->  [server 2]
-[program N]	 --->  [server N]	ex: deploy -target school -script compile_labs
-								ex: deploy -target fridge -script got_ice?
-
-many programs, one server
--------------------------
-
-[program 1]  --->  [server 1]	specify one target file, and one script file per program.
-[program 2]  --->  [server 1]
-[program N]	 --->  [server 1]	ex: deploy -target rpi -script backup_database
-
-one program, one server
------------------------
-
-[program]    --->  [server]		specify one target and script file.
-								ex: deploy -target server -script boostrap
-```
-
-Closing thought: This seems more like a ssh-based, remote shell scripting tool than a deploy tool...
-
-## LICENSE
-MIT (see LICENSE file)
